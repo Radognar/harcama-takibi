@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Harcama Takibi</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8f8ff;
+    }
+    /* Üst menü ve aylık navigasyon */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .nav-month {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .nav-month img {
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+    }
+    /* Takvim ikonu */
+    #calendarIcon {
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+    }
+    /* Birikim paneli */
+    section.section-invest {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1.5rem;
+      background-image: url('Assets/BirikimBar-01.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      height: 32px;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .section-invest input {
+      border: none;
+      background: transparent;
+      font-weight: bold;
+      width: 80px;
+      text-align: right;
+      font-size: 12px;
+      color: #333;
+    }
+    .section-invest .usd,
+    .section-invest .alt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-invest img {
+      width: 14px;
+      height: 14px;
+    }
+    .expense-list {
+      padding: 1rem;
+    }
+    .expense-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-radius: 1rem;
+      background: linear-gradient(to right, #ffe6f0, #f9a8d4);
+      background-size: cover;
+      margin-bottom: 0.75rem;
+      transition: background 0.3s;
+      cursor: pointer;
+      user-select: none;
+    }
+    .expense-bar.paid {
+      background: linear-gradient(to right, #b9fbc0, #2dd4bf);
+    }
+    .footer-total {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1rem;
+      background-image: url('Assets/BottomBar-01.png');
+      background-size: cover;
+      color: white;
+      text-align: center;
+      font-weight: bold;
+      border-radius: 1rem 1rem 0 0;
+    }
+    .fab {
+      position: fixed;
+      bottom: 5rem;
+      right: 1rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-image: url('Assets/AddButton-01.png');
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+    }
+    /* Genel Popup stil */
+    #customDialog,
+    #calendarDialog {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 1.5rem;
+      border-radius: 1.5rem;
+      width: 340px;
+      max-width: 90vw;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      z-index: 9999;
+      text-align: center;
+    }
+    #customDialogOverlay,
+    #calendarOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9998;
+    }
+    #closeDialog {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      font-size: 20px;
+      font-weight: bold;
+      color: #666;
+      cursor: pointer;
+      user-select: none;
+    }
+    #closeDialog:hover {
+      color: #000;
+    }
+    /* Gider Ekle / Düzenle Popup stilleri */
+    #customDialog img {
+      width: 60px;
+      margin-bottom: 1rem;
+    }
+    #customDialog h3 {
+      margin: 0.5rem 0 1rem 0;
+      font-size: 24px;
+    }
+    .field-label {
+      background-color: #00bfa5;
+      color: white;
+      border-radius: 12px 0 0 12px;
+      padding: 0.5rem 1rem;
+      display: inline-block;
+      min-width: 100px;
+    }
+    .field-input {
+      border: none;
+      border-radius: 0 12px 12px 0;
+      padding: 0.5rem;
+      background: #ddd;
+      width: 160px;
+    }
+    .field-input.short {
+      width: 50px;
+      margin: 0 5px 0 5px;
+      text-align: center;
+    }
+    .field-row {
+      margin: 0.75rem 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .button-primary {
+      background: #42a5f5;
+      color: white;
+      padding: 0.75rem 2rem;
+      font-size: 16px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+    .radio-row {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    /* Takvim Popup stilleri */
+    #calendarDialog h3 {
+      margin: 0.5rem 0 1rem 0;
+      font-size: 22px;
+    }
+    .cal-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .cal-nav img {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+    }
+    .cal-view-label {
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .cal-grid {
+      display: grid;
+      gap: 4px;
+    }
+    /* Ay görünümü: 3 sütun x 4 satır */
+    .cal-months {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .cal-months div {
+      padding: 10px 0;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .cal-months .selected-month {
+      background: #42a5f5;
+      color: white;
+    }
+    /* Yıl görünümü: 3 sütun x 4 satır */
+    .cal-years {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .cal-years div {
+      padding: 10px 0;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .cal-years .selected-year {
+      background: #42a5f5;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Üst menü: aylık gezinti ve takvim ikonu -->
+  <div class="header">
+    <div class="nav-month">
+      <img
+        src="Assets/LeftArrow-01.png"
+        alt="Önceki"
+        onclick="changeMonth(-1)"
+      />
+      <h2 id="monthLabel">Haziran 2025</h2>
+      <img
+        src="Assets/RightArrow-01.png"
+        alt="Sonraki"
+        onclick="changeMonth(1)"
+      />
+    </div>
+    <!-- Tıklanınca custom takvim popup'ı açacak -->
+    <img
+      src="Assets/Calendar-01.png"
+      alt="Takvim"
+      id="calendarIcon"
+      onclick="openCalendar()"
+    />
+  </div>
+
+  <!-- Birikim paneli (USD ve ALT) -->
+  <section class="section-invest">
+    <div class="usd">
+      <input
+        id="usdInput"
+        type="text"
+        placeholder="USD"
+        value=""
+      />
+      <img src="Assets/USDicon-01.png" alt="USD" />
+    </div>
+    <div class="alt">
+      <input
+        id="altInput"
+        type="text"
+        placeholder="ALT"
+        value=""
+      />
+      <img src="Assets/ALTicon-01.png" alt="ALT" />
+    </div>
+  </section>
+
+  <!-- Harcama listesi -->
+  <main class="expense-list" id="expenseList"></main>
+
+  <!-- Yeni harcama butonu -->
+  <div class="fab" onclick="openAddDialog()"></div>
+
+  <!-- Alt kısım: toplam değer -->
+  <div class="footer-total">
+    <span id="monthName"></span> Ayı Toplam: <span id="totalAmount">0,00₺</span>
+  </div>
+
+  <!-- Gider Ekle / Düzenle Popup için overlay -->
+  <div id="customDialogOverlay"></div>
+
+  <!-- Gider Ekle / Düzenle Popup -->
+  <div id="customDialog">
+    <span id="closeDialog" onclick="closeDialog()">&times;</span>
+    <img src="Assets/PopUpicon-01.png" alt="icon" />
+    <h3 id="dialogTitle">Gider Ekle</h3>
+
+    <div class="radio-row">
+      <label>
+        <input
+          type="radio"
+          name="type"
+          value="taksit"
+          checked
+          onchange="toggleInstallment()"
+        />
+        Taksit
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="type"
+          value="tek"
+          onchange="toggleInstallment()"
+        />
+        Nakit
+      </label>
+    </div>
+
+    <div class="field-row">
+      <span class="field-label">Gider Adı:</span>
+      <input type="text" id="inputName" class="field-input" />
+    </div>
+    <div class="field-row">
+      <span class="field-label">Tutar Bilgisi:</span>
+      <input type="number" id="inputAmount" class="field-input" />
+    </div>
+
+    <div
+      class="field-row"
+      id="installmentSection"
+      style="display: flex; align-items: center; justify-content: center;"
+    >
+      <span class="field-label">Taksit Bilgisi:</span>
+      <input
+        type="number"
+        id="inputInstallmentCurrent"
+        class="field-input short"
+        placeholder="Kalan"
+      />
+      <span style="margin: 0 4px; font-size: 16px; color: #333;">/</span>
+      <input
+        type="number"
+        id="inputInstallmentTotal"
+        class="field-input short"
+        placeholder="Toplam"
+      />
+    </div>
+
+    <button class="button-primary" id="dialogSaveBtn">Kaydet</button>
+  </div>
+
+  <!-- Takvim Popup için overlay -->
+  <div id="calendarOverlay"></div>
+
+  <!-- Takvim Popup -->
+  <div id="calendarDialog">
+    <div class="cal-nav">
+      <img src="Assets/LeftArrow-01.png" alt="Geri" onclick="prevNav()" />
+      <span class="cal-view-label" onclick="toggleCalendarView()">
+        <span id="calViewLabel">2025</span>
+      </span>
+      <img src="Assets/RightArrow-01.png" alt="İleri" onclick="nextNav()" />
+    </div>
+    <!-- Dinamik içerik: Aylar veya Yıllar -->
+    <div id="calContent" class="cal-grid"></div>
+  </div>
+
+  <script>
+    /****************************************
+     * 1) LOCALSTORAGE İÇİN YARDIMCI FONKSİYONLAR
+     ****************************************/
+    const STORAGE_KEY = "expensesByMonth"; // web storage anahtarı
+
+    // Eğer localStorage boşsa {}, değilse parse ederek geri döndür
+    function loadExpensesFromLocalStorage() {
+      const json = localStorage.getItem(STORAGE_KEY);
+      if (!json) {
+        return {};
+      }
+      try {
+        return JSON.parse(json);
+      } catch (err) {
+        console.error("LocalStorage parse hatası:", err);
+        return {};
+      }
+    }
+
+    // expensesByMonth objesini JSON.stringify ile kaydet
+    function saveExpensesToLocalStorage(obj) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+    }
+
+    /****************************************
+     * 2) GLOBAL DEĞİŞKENLER & İLK YÜKLEME
+     ****************************************/
+    // Harcamalar her aya göre saklanacak: { "2025-06": [ {...}, {...} ], "2025-07": [ ... ] }
+    let expensesByMonth = loadExpensesFromLocalStorage();
+
+    const months = [
+      "Ocak",
+      "Şubat",
+      "Mart",
+      "Nisan",
+      "Mayıs",
+      "Haziran",
+      "Temmuz",
+      "Ağustos",
+      "Eylül",
+      "Ekim",
+      "Kasım",
+      "Aralık",
+    ];
+
+    const now = new Date();
+    let currentMonthIndex = now.getMonth();
+    let currentYear = now.getFullYear();
+    let editingIndex = null;
+
+    // Takvim için tutulan değişkenler
+    let calYear = currentYear;
+    let calView = "month"; // "month" veya "year"
+
+    // Popup elemanları referansları
+    const customDialog = document.getElementById("customDialog");
+    const customOverlay = document.getElementById("customDialogOverlay");
+    const calendarDialog = document.getElementById("calendarDialog");
+    const calendarOverlay = document.getElementById("calendarOverlay");
+    const calViewLabel = document.getElementById("calViewLabel");
+    const calContent = document.getElementById("calContent");
+
+    // "Kaydet" butonunu dinle
+    document
+      .getElementById("dialogSaveBtn")
+      .addEventListener("click", submitDialog);
+
+    /****************************************
+     * 3) TARİH / AY GÜNCELLEME FONKSİYONLARI
+     ****************************************/
+    function getCurrentKey() {
+      // Örnek: "2025-06"
+      return `${currentYear}-${String(currentMonthIndex + 1).padStart(
+        2,
+        "0"
+      )}`;
+    }
+
+    function updateMonthLabel() {
+      const monthLabelElem = document.getElementById("monthLabel");
+      const monthNameElem = document.getElementById("monthName");
+      const labelText = `${months[currentMonthIndex]} ${currentYear}`;
+      monthLabelElem.innerText = labelText;
+      monthNameElem.innerText = months[currentMonthIndex];
+    }
+
+    function changeMonth(delta) {
+      currentMonthIndex += delta;
+      if (currentMonthIndex < 0) {
+        currentMonthIndex = 11;
+        currentYear--;
+      } else if (currentMonthIndex > 11) {
+        currentMonthIndex = 0;
+        currentYear++;
+      }
+      updateMonthLabel();
+      renderExpenses();
+    }
+
+    /****************************************
+     * 4) GİDER EKLE / DÜZENLE / LİSTELEME FONKSİYONLARI
+     ****************************************/
+    function addExpense(name, amount, isInstallment, installmentInfo = null) {
+      const key = getCurrentKey();
+      if (!expensesByMonth[key]) expensesByMonth[key] = [];
+      expensesByMonth[key].push({
+        name,
+        amount: parseFloat(amount),
+        isInstallment,
+        installmentInfo,
+        paid: false,
+      });
+      // Yeni harcamayı ekledikten sonra localStorage'a kaydet
+      saveExpensesToLocalStorage(expensesByMonth);
+      renderExpenses();
+    }
+
+    function renderExpenses() {
+      const key = getCurrentKey();
+      const expenses = expensesByMonth[key] || [];
+      const container = document.getElementById("expenseList");
+      container.innerHTML = "";
+      let total = 0;
+
+      expenses.forEach((exp, index) => {
+        const bar = document.createElement("div");
+        bar.className = "expense-bar";
+        if (exp.paid) bar.classList.add("paid");
+
+        // Tıklandığında "ödendi / ödenmedi" değiştir, sonra kaydet ve yeniden çiz
+        bar.onclick = () => {
+          exp.paid = !exp.paid;
+          saveExpensesToLocalStorage(expensesByMonth);
+          renderExpenses();
+        };
+
+        // Sağ tıkla → düzenleme
+        bar.oncontextmenu = (e) => {
+          e.preventDefault();
+          openEditDialog(index);
+        };
+
+        const title = document.createElement("strong");
+        title.innerText =
+          exp.name + (exp.isInstallment ? ` (${exp.installmentInfo})` : "");
+        const amountSpan = document.createElement("span");
+        amountSpan.innerText = exp.amount.toFixed(2) + "₺";
+
+        bar.appendChild(title);
+        bar.appendChild(amountSpan);
+        container.appendChild(bar);
+
+        if (exp.paid) total += exp.amount;
+      });
+
+      document.getElementById("totalAmount").innerText =
+        total.toFixed(2) + "₺";
+    }
+
+    function openEditDialog(index) {
+      editingIndex = index;
+      const key = getCurrentKey();
+      const exp = expensesByMonth[key][index];
+
+      document.getElementById("dialogTitle").innerText = "Gider Düzenle";
+      document.getElementById("dialogSaveBtn").innerText = "Güncelle";
+
+      document.getElementById("inputName").value = exp.name;
+      document.getElementById("inputAmount").value = exp.amount;
+
+      if (exp.isInstallment) {
+        document.querySelector(
+          'input[name="type"][value="taksit"]'
+        ).checked = true;
+        toggleInstallment();
+        const [cur, tot] = exp.installmentInfo.split("/");
+        document.getElementById("inputInstallmentCurrent").value = cur;
+        document.getElementById("inputInstallmentTotal").value = tot;
+      } else {
+        document.querySelector('input[name="type"][value="tek"]').checked = true;
+        toggleInstallment();
+      }
+
+      customDialog.style.display = "block";
+      customOverlay.style.display = "block";
+    }
+
+    function openAddDialog() {
+      editingIndex = null;
+      document.getElementById("dialogTitle").innerText = "Gider Ekle";
+      document.getElementById("dialogSaveBtn").innerText = "Kaydet";
+      document.querySelector(
+        'input[name="type"][value="taksit"]'
+      ).checked = true;
+      toggleInstallment();
+      document.getElementById("inputName").value = "";
+      document.getElementById("inputAmount").value = "";
+      document.getElementById("inputInstallmentCurrent").value = "";
+      document.getElementById("inputInstallmentTotal").value = "";
+      customDialog.style.display = "block";
+      customOverlay.style.display = "block";
+    }
+
+    function closeDialog() {
+      customDialog.style.display = "none";
+      customOverlay.style.display = "none";
+      editingIndex = null;
+    }
+
+    function submitDialog() {
+      const type = document.querySelector('input[name="type"]:checked').value;
+      const name = document.getElementById("inputName").value.trim();
+      const amount = document.getElementById("inputAmount").value.trim();
+
+      let installment = null;
+      if (type === "taksit") {
+        const cur = document
+          .getElementById("inputInstallmentCurrent")
+          .value.trim();
+        const tot = document
+          .getElementById("inputInstallmentTotal")
+          .value.trim();
+        if (!cur || !tot || isNaN(cur) || isNaN(tot)) {
+          return alert("Taksit bilgilerini düzgün doldurun.");
+        }
+        installment = `${cur}/${tot}`;
+      }
+
+      if (!name || !amount || isNaN(amount)) {
+        return alert("Gider adı ve tutarı düzgün doldurun.");
+      }
+
+      const key = getCurrentKey();
+      if (!expensesByMonth[key]) expensesByMonth[key] = [];
+
+      if (editingIndex === null) {
+        // Yeni harcama ekleme
+        expensesByMonth[key].push({
+          name,
+          amount: parseFloat(amount),
+          isInstallment: type === "taksit",
+          installmentInfo: installment,
+          paid: false,
+        });
+      } else {
+        // Mevcut harcamayı güncelleme
+        const exp = expensesByMonth[key][editingIndex];
+        exp.name = name;
+        exp.amount = parseFloat(amount);
+        exp.isInstallment = type === "taksit";
+        exp.installmentInfo = installment;
+      }
+
+      // Düzenledikten/ekledikten sonra localStorage'a kaydet
+      saveExpensesToLocalStorage(expensesByMonth);
+      renderExpenses();
+      closeDialog();
+    }
+
+    function toggleInstallment() {
+      const type = document.querySelector('input[name="type"]:checked').value;
+      document.getElementById("installmentSection").style.display =
+        type === "taksit" ? "flex" : "none";
+    }
+
+    /* -------------------------------
+       TAKVİM KODLARI (SADECE AY VE YIL)
+    ------------------------------- */
+    function openCalendar() {
+      calYear = currentYear;
+      calView = "month";
+      renderCalendar();
+      calendarDialog.style.display = "block";
+      calendarOverlay.style.display = "block";
+    }
+
+    function closeCalendar() {
+      calendarDialog.style.display = "none";
+      calendarOverlay.style.display = "none";
+    }
+
+    function prevNav() {
+      if (calView === "month") {
+        calYear--;
+      } else if (calView === "year") {
+        calYear -= 12;
+      }
+      renderCalendar();
+    }
+
+    function nextNav() {
+      if (calView === "month") {
+        calYear++;
+      } else if (calView === "year") {
+        calYear += 12;
+      }
+      renderCalendar();
+    }
+
+    function toggleCalendarView() {
+      if (calView === "month") {
+        calView = "year";
+      } else {
+        calView = "month";
+      }
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      calContent.innerHTML = "";
+
+      if (calView === "month") {
+        // Ay görünümü
+        calViewLabel.innerText = `${calYear}`;
+        renderMonthGrid();
+      } else {
+        // Yıl görünümü
+        const startYear = calYear - (calYear % 12);
+        calViewLabel.innerText = `${startYear} - ${startYear + 11}`;
+        renderYearGrid(startYear);
+      }
+    }
+
+    function renderMonthGrid() {
+      const monthGrid = document.createElement("div");
+      monthGrid.className = "cal-grid cal-months";
+      months.forEach((m, idx) => {
+        const cell = document.createElement("div");
+        cell.innerText = m.substr(0, 3);
+        if (idx === currentMonthIndex && calYear === currentYear) {
+          cell.classList.add("selected-month");
+        }
+        cell.onclick = () => {
+          // Ay seçildiğinde o aya geç ve popup'ı kapat
+          currentYear = calYear;
+          currentMonthIndex = idx;
+          updateMonthLabel();
+          renderExpenses();
+          closeCalendar();
+        };
+        monthGrid.appendChild(cell);
+      });
+      calContent.appendChild(monthGrid);
+    }
+
+    function renderYearGrid(startYear) {
+      const yearGrid = document.createElement("div");
+      yearGrid.className = "cal-grid cal-years";
+      for (let i = 0; i < 12; i++) {
+        const y = startYear + i;
+        const cell = document.createElement("div");
+        cell.innerText = y;
+        if (y === currentYear) {
+          cell.classList.add("selected-year");
+        }
+        cell.onclick = () => {
+          // Yıl seçildiğinde o yıla geç, bir sonraki tıklamada ay görünümü
+          calYear = y;
+          calView = "month";
+          renderCalendar();
+        };
+        yearGrid.appendChild(cell);
+      }
+      calContent.appendChild(yearGrid);
+    }
+
+    /* -------------------------------
+       UYGULAMA BAŞLANGICI
+    ------------------------------- */
+    // Sayfa ilk açıldığında ay etiketini ve harcamaları ayarla
+    updateMonthLabel();
+    renderExpenses();
+
+    // Overlay tıklamalarında Popup'ı kapat
+    calendarOverlay.addEventListener("click", closeCalendar);
+    customOverlay.addEventListener("click", closeDialog);
+  </script>
+</body>
+</html>
